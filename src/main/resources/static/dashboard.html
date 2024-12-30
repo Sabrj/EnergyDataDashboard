@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Data Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        svg {
+            font: 12px sans-serif;
+        }
+        .bar {
+            fill: steelblue;
+        }
+        .bar:hover {
+            fill: orange;
+        }
+        .axis-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<h1>Energy Data Dashboard</h1>
+<div id="chart"></div>
+<script>
+    fetch('/api/energy-data')
+        .then(response => response.json())
+        .then(data => {
+            const parsedData = data.map(d => ({
+                timestamp: new Date(d.timestamp),
+                consumption: d.consumption,
+                timezone: d.timezone
+            }));
+
+            const x = d3.scaleTime()
+                .domain(d3.extent(parsedData, d => d.timestamp))
+                .range([0, width]);
+
+            const svg = d3.select("#chart")
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            svg.append("path")
+                .datum(parsedData)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("d", d3.line()
+                    .x(d => x(d.timestamp))
+                    .y(d => y(d.consumption))
+                );
+
+            svg.selectAll(".timezone-marker")
+                .data(parsedData)
+                .enter().append("circle")
+                .attr("class", "timezone-marker")
+                .attr("cx", d => x(d.timestamp))
+                .attr("cy", d => y(d.consumption))
+                .attr("r", 5)
+                .style("fill", d => d.timezone === "Europe/Vienna" ? "blue" : "orange");
+        });
+</script>
+</body>
+</html>
